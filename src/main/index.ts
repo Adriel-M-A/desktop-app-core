@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -7,7 +7,8 @@ function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
-    show: false, // Mantenemos oculto hasta que esté listo
+    show: false,
+    frame: false, // <--- ESTO QUITA EL BORDE NATIVO
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -17,7 +18,7 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.maximize() // <--- Esto fuerza la pantalla completa (maximizada)
+    mainWindow.maximize()
     mainWindow.show()
   })
 
@@ -26,7 +27,6 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // Carga de la URL (Dev) o Archivo (Prod)
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -35,12 +35,37 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  // Configuración básica
-  electronApp.setAppUserModelId('com.coffee-manager')
+  electronApp.setAppUserModelId('com.desktop-app-core')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
+
+  // --- COMUNICACIÓN PARA LA BARRA DE TÍTULO ---
+  ipcMain.on('window-minimize', (event) => {
+    const webContents = event.sender
+    const win = BrowserWindow.fromWebContents(webContents)
+    if (win) win.minimize()
+  })
+
+  ipcMain.on('window-maximize', (event) => {
+    const webContents = event.sender
+    const win = BrowserWindow.fromWebContents(webContents)
+    if (win) {
+      if (win.isMaximized()) {
+        win.unmaximize()
+      } else {
+        win.maximize()
+      }
+    }
+  })
+
+  ipcMain.on('window-close', (event) => {
+    const webContents = event.sender
+    const win = BrowserWindow.fromWebContents(webContents)
+    if (win) win.close()
+  })
+  // ---------------------------------------------
 
   createWindow()
 

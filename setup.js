@@ -1,4 +1,3 @@
-// setup.js
 const fs = require('fs')
 const path = require('path')
 const readline = require('readline')
@@ -8,50 +7,50 @@ const rl = readline.createInterface({
   output: process.stdout
 })
 
-const filesToUpdate = ['package.json', 'electron-builder.yml', 'src/renderer/index.html']
+const rootDir = path.join(__dirname, '..')
 
-rl.question('¿Cuál es el nombre de tu nuevo proyecto (ej. super-notas)? ', (appName) => {
-  rl.question('¿Cuál es el App ID (ej. com.adriel.notas)? ', (appId) => {
-    rl.question('¿Título de la ventana (Product Name)? ', (productName) => {
-      console.log('\nActualizando archivos...')
+console.log('🚀 Iniciando configuración del nuevo proyecto...')
 
-      // 1. Actualizar package.json
-      updateFile('package.json', (content) => {
-        const json = JSON.parse(content)
-        json.name = appName
-        json.description = `Application ${productName}`
-        json.version = '0.0.1'
-        return JSON.stringify(json, null, 2)
-      })
+rl.question('Nombre del proyecto (kebab-case, ej: mi-app-ventas): ', (appName) => {
+  rl.question('Nombre legible (ej: Mi App de Ventas): ', (prettyName) => {
+    rl.question('ID de la App (ej: com.empresa.ventas): ', (appId) => {
+      updatePackageJson(appName, appId)
+      updateHtmlTitle(prettyName)
 
-      // 2. Actualizar electron-builder.yml
-      updateFile('electron-builder.yml', (content) => {
-        let newContent = content.replace(/appId: .*/g, `appId: ${appId}`)
-        newContent = newContent.replace(/productName: .*/g, `productName: ${productName}`)
-        newContent = newContent.replace(/executableName: .*/g, `executableName: ${appName}`)
-        return newContent
-      })
-
-      // 3. Actualizar HTML Title
-      updateFile('src/renderer/index.html', (content) => {
-        return content.replace(/<title>.*<\/title>/, `<title>${productName}</title>`)
-      })
-
-      console.log('\n¡Listo! Tu proyecto ha sido configurado.')
-      console.log('Ahora puedes borrar este archivo: rm setup.js')
+      console.log(`\n✅ ¡Listo! Proyecto renombrado a: ${prettyName}`)
+      console.log('👉 Ahora ejecuta: npm install')
       rl.close()
     })
   })
 })
 
-function updateFile(filePath, processContent) {
-  const fullPath = path.join(__dirname, filePath)
-  if (fs.existsSync(fullPath)) {
-    const content = fs.readFileSync(fullPath, 'utf8')
-    const newContent = processContent(content)
-    fs.writeFileSync(fullPath, newContent)
-    console.log(`✅ ${filePath} actualizado.`)
-  } else {
-    console.log(`❌ No se encontró ${filePath}`)
+function updatePackageJson(name, appId) {
+  const packagePath = path.join(rootDir, 'package.json')
+  if (fs.existsSync(packagePath)) {
+    let content = fs.readFileSync(packagePath, 'utf8')
+    const json = JSON.parse(content)
+
+    // Actualizar campos
+    json.name = name
+    json.description = `Project ${name} generated from template`
+
+    // Actualizar configuración de Electron Builder si existe
+    if (json.build) {
+      json.build.appId = appId
+      json.build.productName = name
+    }
+
+    fs.writeFileSync(packagePath, JSON.stringify(json, null, 2))
+    console.log('📄 package.json actualizado.')
+  }
+}
+
+function updateHtmlTitle(title) {
+  const htmlPath = path.join(rootDir, 'src', 'renderer', 'index.html')
+  if (fs.existsSync(htmlPath)) {
+    let content = fs.readFileSync(htmlPath, 'utf8')
+    content = content.replace(/<title>.*<\/title>/, `<title>${title}</title>`)
+    fs.writeFileSync(htmlPath, content)
+    console.log('📄 index.html actualizado.')
   }
 }

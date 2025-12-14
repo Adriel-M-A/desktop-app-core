@@ -1,5 +1,5 @@
-appId: com.adriel.app-id-placeholder
-productName: AppNamePlaceholder
+appId: com.adriel.notas
+productName: desktop-app-core
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: ${productName}
+  executableName: desktop-app-core
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
